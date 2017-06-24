@@ -9,14 +9,12 @@
 // author: wor3835 | wor3835@rit.edu
 //
 
+#define _BSD_SOURCE // must be set before headers 
+
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <getopt.h> // processes command line arguments that begin with (-)
-
-//#include <math.h> 
-
-//float roundf(float x); 
+#include <getopt.h> // processes command line arguments that begin with (-) 
 
 // default values for simulation
 
@@ -81,6 +79,9 @@ static void help() {
 ///
 
 int main( int argc, char * argv[] ) {
+
+    int seed = 41;
+    srandom(seed); // seeds random number generator 
 
     int c;
     int opterr = 0; 
@@ -166,7 +167,7 @@ int main( int argc, char * argv[] ) {
 	}
 	break;
 
-    default: // default simulation
+    default: 
 	fprintf( stderr, "Bad option causes failure. \n");
 	break;
     }
@@ -178,16 +179,64 @@ int main( int argc, char * argv[] ) {
 
 	float x = (size * size) * density;
 	totalTrees = (int)(x + 0.5); // rounds float to integer
-	//totalTrees = roundf(totalTrees); 
+	//printf("%d\n", totalTrees);  
 	float y = totalTrees * pBurning; // represented by (*) 
 	fireTrees = (int)(y + 0.5);
-	//fireTrees = roundf(fireTrees);
+	//printf("%d\n", fireTrees);
 	float z = (totalTrees - fireTrees); // represented by (Y)
 	livingTrees = (int)(z + 0.5);
-	//livingTrees = roundf(fireTrees);
-	float s = totalTrees - (fireTrees + livingTrees); // represented by space character
-	spaces = (int)(s + 0.5); 
-	//spaces = roundf(spaces);
+	//printf("%d\n", livingTrees);
+	float s = (size * size) - totalTrees; // represented by space character
+	spaces = (int)(s + 0.5);
+	printf("%d\n", spaces);
+
+	// temp variables 
+
+	int tempfT = fireTrees;
+	int templT = livingTrees;
+	int temps = spaces;
+
+	//  
+
+	char grid [size][size]; // grid is represented as a 2D array
+
+	int i;
+	int j;
+	int b = 1; // boolean 
+	
+	for (i = 0; i < size; i++) { // builds cycle0 randomly
+	    for (j = 0; j < size; j++) {
+	      while(b) {
+		int r = random() % 3;
+		if (r == 0 && fireTrees > 0) {
+		    fireTrees--;
+		    grid[i][j] = '*';
+		    printf("%c", grid[i][j]);
+		    break;
+		} else if (r == 1 && livingTrees > 0) {
+		    livingTrees--;
+		    grid[i][j] = 'Y';
+		    printf("%c", grid[i][j]);
+		    break;
+		} else if (r == 2 && spaces > 0) {
+		    spaces--;
+		    grid[i][j] = ' ';
+		    printf("%c", grid[i][j]);
+		    break; 
+		}
+
+	     }
+
+	    }
+
+	printf("\n");
+
+	}
+
+	fireTrees = tempfT;
+	livingTrees = templT;
+	spaces = temps;
+
+return(EXIT_SUCCESS);
 
 }
-
