@@ -31,6 +31,8 @@
 #define DEFAULT_LIVING 0 // default livingTrees
 #define DEFAULT_SPACES 0 // default spaces
 
+#define DEFAULT_CYCLE 16 // default cycle 
+
 static size_t size = DEFAULT_SIZE; // size of the grid
 
 static float pCatch = DEFAULT_PROB_CATCH; // probability of a tree catching fire
@@ -41,15 +43,15 @@ static float pBurning = DEFAULT_BURN; // proportion of the tree population initi
 
 static float pNeighbor = DEFAULT_PROP_NEIGHBOR; // proportion of neighbors that will influence a tree catching fire
 
-static int cycle; // cycle of simulation
+static int cycle = DEFAULT_CYCLE; // cycle of simulation
 
 static int changes; // number of changes in most recent cycle
 
-//static int cChanges; // cumulative number of changes of all cycles
+static int cChanges; // cumulative number of changes of all cycles
 
 static int totalTrees = DEFAULT_TREES; // total number of trees  
 
-static int fireTrees = DEFAULT_FIRE; // total number of trees initially on fire
+static int fireTrees = DEFAULT_FIRE; // total number of trees on fire
 
 static int livingTrees = DEFAULT_LIVING; // total number of living trees
 
@@ -82,6 +84,9 @@ static void help() {
 
 /// Modifies the grid in place. Applies spread function to 
 /// each cell.
+/// Changes any burning tree to a 0,1,2 or 3 to represent
+/// its current cycle. These numbers are ignored when the grid
+/// is printed. The function handles the 2-cycle burn for trees that burn.   
  
 static int update( char g[size][size] ) {
    
@@ -93,113 +98,152 @@ static int update( char g[size][size] ) {
     int r;
     int c;
 
-    int ret; // return value of spread (1 if tree starts burning, 2 if tree burnt down)
+    int ret; // return value of spread (1 if tree starts burning)
 
     for (r = 0; r < s; r++) {
         for (c = 0; c < s; c++) {    
-	    if ( g[r][c] == 'Y' || g[r][c] == '*' ) {
+	    if ( cpy[r][c] == 'Y' ) {
 		ret = applySpread(r, c, cpy);
 		if ( ret == 1 ) {
-		    g[r][c] = '*';
+		    g[r][c] = '0'; // becomes burning in actual grid
 		    changes++;
+		    fireTrees++;
+		    livingTrees--;
 		}
 	    }
-	}
+	    else if ( cpy[r][c] == '*' ) {
+		g[r][c] = '0';
+	    }
+	    else if ( cpy[r][c] == '0' ) {
+		g[r][c] = '1'; // first cycle
+		//changes++;
+	    }
+	    else if ( cpy[r][c] == '1' ) {
+		g[r][c] = '2'; // second cycle 
+		//changes++;
+	    }
+	    else if ( cpy[r][c] == '2' ) {
+		g[r][c] = '.'; // third cycle
+		changes++;
+		totalTrees--;
+		fireTrees--;
+	    }
+        }
     }
-    return changes;
+  return changes;
 }
 
-/// TODO
+/// Implements the spread algorithm. Function handles 8-way connectivity of neighbors. The 2-cycle
+/// burn for burning trees is handled in update. 
 
 static int applySpread(int row, int col, char copy[size][size]) {
 	
     int totalNeighbors = 0; // total neighbors of tree 
     int burningNeighbors =  0; // total tree neighbors of tree
 
-  if ( (copy[row][col] == 'Y') ) { // if living tree
-
     if ( ( row - 1 >= 0 ) ) { // north neighbor
-	if ( ( copy[row - 1][col] == 'Y' || copy[row - 1][col] == '*' ) ) {
+	if ( ( copy[row - 1][col] == 'Y' || copy[row - 1][col] == '*' 
+		|| copy[row - 1][col] == '0' || copy[row - 1][col] == '1' || copy[row - 1][col] == '2') ) {
 	    totalNeighbors++;
 	}
-	if ( ( copy[row - 1][col] == '*' ) ) {
+	if ( ( copy[row - 1][col] == '*' || copy[row - 1][col] == '0' || copy[row - 1][col] == '1'
+		|| copy[row - 1][col] == '2') ) {
 	    burningNeighbors++;
 	}
     }
 
     if ( ( col + 1 < size ) ) { // east neighbor
-        if ( ( copy[row][col + 1] == 'Y' || copy[row][col + 1] == '*' ) ) {
+        if ( ( copy[row][col + 1] == 'Y' || copy[row][col + 1] == '*'
+                || copy[row][col + 1] == '0' || copy[row][col + 1] == '1' || copy[row][col + 1] == '2') ) {
             totalNeighbors++;
         }
-	if ( ( copy[row][col + 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+        if ( ( copy[row][col + 1] == '*' || copy[row][col + 1] == '0' || copy[row][col + 1] == '1'
+                || copy[row][col + 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( row + 1 < size) ) { // south neighbor
-        if ( ( copy[row + 1][col] == 'Y' || copy[row + 1][col] == '*' ) ) {
+        if ( ( copy[row + 1][col] == 'Y' || copy[row + 1][col] == '*'
+                || copy[row + 1][col] == '0' || copy[row + 1][col] == '1' || copy[row + 1][col] == '2') ) {
             totalNeighbors++;
         }
-	if ( ( copy[row + 1][col] == '*' )) {
-	    burningNeighbors++;
-	}
- 
+        if ( ( copy[row + 1][col] == '*' || copy[row + 1][col] == '0' || copy[row + 1][col] == '1'
+                || copy[row + 1][col] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( col - 1 >= 0 ) ) { // west neighbor 
-        if ( ( copy[row][col - 1] == 'Y' || copy[row][col - 1] == '*' ) ) {
+        if ( ( copy[row][col - 1] == 'Y' || copy[row][col - 1] == '*'
+                || copy[row][col - 1] == '0' || copy[row][col - 1] == '1' || copy[row][col - 1] == '2') ) {
             totalNeighbors++;
         }
-	if ( ( copy[row][col - 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+        if ( ( copy[row][col - 1] == '*' || copy[row][col - 1] == '0' || copy[row][col - 1] == '1'
+                || copy[row][col - 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( row - 1 >= 0 && col + 1 < size ) ) { // northeast neighbor 
-	if ( ( copy[row - 1][col + 1] == 'Y' || copy[row - 1][col + 1] == '*' ) ) {
-	    totalNeighbors++;
-	}
-	if ( ( copy[row - 1][col + 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+	if ( ( copy[row - 1][col + 1] == 'Y' || copy[row - 1][col + 1] == '*'
+                || copy[row - 1][col + 1] == '0' || copy[row - 1][col + 1] == '1' || copy[row - 1][col + 1] == '2') ) {
+            totalNeighbors++;
+        }
+        if ( ( copy[row - 1][col + 1] == '*' || copy[row - 1][col + 1] == '0' || copy[row - 1][col + 1] == '1'
+                || copy[row - 1][col + 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( row + 1 < size && col + 1 < size ) ) { // southeast neighbor
-	if ( ( copy[row + 1][col + 1] == 'Y' || copy[row + 1][col + 1] == '*' ) ) {
-	    totalNeighbors++;
-	}
-	if ( ( copy[row + 1][col + 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+	if ( ( copy[row + 1][col + 1] == 'Y' || copy[row + 1][col + 1] == '*'
+                || copy[row + 1][col + 1] == '0' || copy[row + 1][col + 1] == '1' || copy[row + 1][col + 1] == '2') ) {
+            totalNeighbors++;
+        }
+        if ( ( copy[row + 1][col + 1] == '*' || copy[row + 1][col + 1] == '0' || copy[row + 1][col + 1] == '1'
+                || copy[row + 1][col + 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( row + 1 < size && col - 1 >= 0 ) ) { // southwest neighbor
-	if ( ( copy[row + 1][col - 1] == 'Y'|| copy[row + 1][col - 1] == '*' ) ) {
-	    totalNeighbors++;
-	}
-	if ( ( copy[row + 1][col - 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+	if ( ( copy[row + 1][col - 1] == 'Y' || copy[row + 1][col - 1] == '*'
+                || copy[row + 1][col - 1] == '0' || copy[row + 1][col - 1] == '1' || copy[row + 1][col - 1] == '2') ) {
+            totalNeighbors++;
+        }
+        if ( ( copy[row + 1][col - 1] == '*' || copy[row + 1][col + 1] == '0' || copy[row + 1][col - 1] == '1'
+                || copy[row + 1][col - 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
+
 
     if ( ( row - 1 >= 0 && col - 1 >= 0 ) ) { // northwest neighbor 
-	if ( ( copy[row - 1][col - 1] == 'Y' || copy[row - 1][col - 1] == '*' ) ) {
-	    totalNeighbors++;
-	}
-	if ( ( copy[row - 1][col - 1] == '*' ) ) {
-	    burningNeighbors++;
-	}
+	if ( ( copy[row - 1][col - 1] == 'Y' || copy[row - 1][col - 1] == '*'
+                || copy[row - 1][col - 1] == '0' || copy[row - 1][col - 1] == '1' || copy[row - 1][col - 1] == '2') ) {
+            totalNeighbors++;
+        }
+        if ( ( copy[row - 1][col - 1] == '*' || copy[row - 1][col - 1] == '0' || copy[row - 1][col - 1] == '1'
+                || copy[row - 1][col - 1] == '2') ) {
+            burningNeighbors++;
+        }
     }
-
-    if ( (burningNeighbors / totalNeighbors) > pNeighbor ) { // proportion of neighbors is higher
+ 
+    if ( ( (float) burningNeighbors/totalNeighbors ) > pNeighbor ) { // proportion of neighbors is higher
 	float rand = random() / (float) RAND_MAX;
 	if ( rand < pCatch) {
 	    return 1;
 	}
     }
 
-  }
   return 0;   
+
 }
 
 /// Uses getopt() function to process command line options. 
@@ -378,8 +422,25 @@ int main( int argc, char * argv[] ) {
 //
 // // // // // // // // // // // // // // // // // // // // // // // // 
 
-  while(fireTrees > 0 && cycle > 0) {
-	update(grid);
+  int newC; // changes per cycle
+  int currCycle = 0; // current cycle of simulation
+
+  while(fireTrees >= 0 && cycle >= 0) {
+	newC = update(grid);
+	cChanges += newC;
+	changes = 0;
+
+	for (i = 0; i < size; i++) { 
+            for (j = 0; j < size; j++) {
+		printf("%c", grid[i][j]);
+	    }
+	  printf("\n");
+	}
+	//printf("%d\n", newC);
+	//printf("%d\n", currCycle);
+	newC = 0;
+	currCycle++;
+	cycle--;
   }
 
 return(EXIT_SUCCESS);
