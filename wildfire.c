@@ -11,11 +11,16 @@
 
 #define _BSD_SOURCE // must be set before headers 
 
+#include <unistd.h> // usleep
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h> // memcpy
+#include <string.h> // memcpy, strcpy
 
 #include <getopt.h> // processes command line arguments that begin with (-) 
+
+#include "display.h" // display cursor
+
+#include <limits.h> 
 
 // default values for simulation
 
@@ -31,8 +36,6 @@
 #define DEFAULT_LIVING 0 // default livingTrees
 #define DEFAULT_SPACES 0 // default spaces
 
-#define DEFAULT_CYCLE 16 // default cycle 
-
 static size_t size = DEFAULT_SIZE; // size of the grid
 
 static float pCatch = DEFAULT_PROB_CATCH; // probability of a tree catching fire
@@ -43,11 +46,13 @@ static float pBurning = DEFAULT_BURN; // proportion of the tree population initi
 
 static float pNeighbor = DEFAULT_PROP_NEIGHBOR; // proportion of neighbors that will influence a tree catching fire
 
-static int cycle = DEFAULT_CYCLE; // cycle of simulation
+static int print = DEFAULT_PRINT_COUNT; // print mode; 1 if on, 0 if off
 
-static int changes; // number of changes in most recent cycle
+static int cycle = INT_MAX; // cycle of simulation
 
-static int cChanges; // cumulative number of changes of all cycles
+static int changes = 0; // number of changes in most recent cycle
+
+static int cChanges = 0; // cumulative number of changes of all cycles
 
 static int totalTrees = DEFAULT_TREES; // total number of trees  
 
@@ -60,13 +65,13 @@ static int spaces = DEFAULT_SPACES; // total number of spaces in grid
 // function declarations //
 static int applySpread(int row, int col, char copy[size][size]);
 static void help();
-static int update( char g[size][size] );
+static void update( char g[size][size] );
 int main( int argc, char * argv[] );
 
 /// help function gives instructions. Prints usage information to stderr.
 
 static void help() {
-    fprintf( stderr, "nusage: wildfire [options]\n" );
+    fprintf( stderr, "usage: wildfire [options]\n" );
     fprintf( stderr, "By default, the simulation runs in overlay display mode.\n" );
     fprintf( stderr, "The -pN option makes the simulation run in print mode for up to N cycles.\n" );
     printf("\n");
@@ -79,7 +84,8 @@ static void help() {
     fprintf( stderr, " -pN # number of cycles to print before quitting. -1 < N < ...\n" );
     fprintf( stderr, " -sN # simulation grid size. 4 < N < 41.\n" );
     printf("\n");
-    printf("\n");
+   printf("\n");
+    exit(0);
 }
 
 /// Modifies the grid in place. Applies spread function to 
@@ -88,7 +94,7 @@ static void help() {
 /// its current cycle. These numbers are ignored when the grid
 /// is printed. The function handles the 2-cycle burn for trees that burn.   
  
-static int update( char g[size][size] ) {
+static void update( char g[size][size] ) {
    
     int s = size;
 
@@ -107,6 +113,7 @@ static int update( char g[size][size] ) {
 		if ( ret == 1 ) {
 		    g[r][c] = '0'; // becomes burning in actual grid
 		    changes++;
+		    //cChanges++;
 		    fireTrees++;
 		    livingTrees--;
 		}
@@ -125,12 +132,13 @@ static int update( char g[size][size] ) {
 	    else if ( cpy[r][c] == '2' ) {
 		g[r][c] = '.'; // third cycle
 		changes++;
+		//cChanges++;
 		totalTrees--;
 		fireTrees--;
 	    }
         }
     }
-  return changes;
+  //return changes;
 }
 
 /// Implements the spread algorithm. Function handles 8-way connectivity of neighbors. The 2-cycle
@@ -140,6 +148,8 @@ static int applySpread(int row, int col, char copy[size][size]) {
 	
     int totalNeighbors = 0; // total neighbors of tree 
     int burningNeighbors =  0; // total tree neighbors of tree
+
+    int tmpsize = size;
 
     if ( ( row - 1 >= 0 ) ) { // north neighbor
 	if ( ( copy[row - 1][col] == 'Y' || copy[row - 1][col] == '*' 
@@ -152,7 +162,7 @@ static int applySpread(int row, int col, char copy[size][size]) {
 	}
     }
 
-    if ( ( col + 1 < size ) ) { // east neighbor
+    if ( ( col + 1 < tmpsize ) ) { // east neighbor
         if ( ( copy[row][col + 1] == 'Y' || copy[row][col + 1] == '*'
                 || copy[row][col + 1] == '0' || copy[row][col + 1] == '1' || copy[row][col + 1] == '2') ) {
             totalNeighbors++;
@@ -164,7 +174,7 @@ static int applySpread(int row, int col, char copy[size][size]) {
     }
 
 
-    if ( ( row + 1 < size) ) { // south neighbor
+    if ( ( row + 1 < tmpsize) ) { // south neighbor
         if ( ( copy[row + 1][col] == 'Y' || copy[row + 1][col] == '*'
                 || copy[row + 1][col] == '0' || copy[row + 1][col] == '1' || copy[row + 1][col] == '2') ) {
             totalNeighbors++;
@@ -188,19 +198,19 @@ static int applySpread(int row, int col, char copy[size][size]) {
     }
 
 
-    if ( ( row - 1 >= 0 && col + 1 < size ) ) { // northeast neighbor 
+    if ( ( row - 1 >= 0 && col + 1 < tmpsize ) ) { // northeast neighbor 
 	if ( ( copy[row - 1][col + 1] == 'Y' || copy[row - 1][col + 1] == '*'
                 || copy[row - 1][col + 1] == '0' || copy[row - 1][col + 1] == '1' || copy[row - 1][col + 1] == '2') ) {
             totalNeighbors++;
         }
-        if ( ( copy[row - 1][col + 1] == '*' || copy[row - 1][col + 1] == '0' || copy[row - 1][col + 1] == '1'
+       if ( ( copy[row - 1][col + 1] == '*' || copy[row - 1][col + 1] == '0' || copy[row - 1][col + 1] == '1'
                 || copy[row - 1][col + 1] == '2') ) {
             burningNeighbors++;
         }
     }
 
 
-    if ( ( row + 1 < size && col + 1 < size ) ) { // southeast neighbor
+    if ( ( row + 1 < tmpsize && col + 1 < tmpsize ) ) { // southeast neighbor
 	if ( ( copy[row + 1][col + 1] == 'Y' || copy[row + 1][col + 1] == '*'
                 || copy[row + 1][col + 1] == '0' || copy[row + 1][col + 1] == '1' || copy[row + 1][col + 1] == '2') ) {
             totalNeighbors++;
@@ -212,7 +222,7 @@ static int applySpread(int row, int col, char copy[size][size]) {
     }
 
 
-    if ( ( row + 1 < size && col - 1 >= 0 ) ) { // southwest neighbor
+    if ( ( row + 1 < tmpsize && col - 1 >= 0 ) ) { // southwest neighbor
 	if ( ( copy[row + 1][col - 1] == 'Y' || copy[row + 1][col - 1] == '*'
                 || copy[row + 1][col - 1] == '0' || copy[row + 1][col - 1] == '1' || copy[row + 1][col - 1] == '2') ) {
             totalNeighbors++;
@@ -246,6 +256,19 @@ static int applySpread(int row, int col, char copy[size][size]) {
 
 }
 
+/// Shuffles grid data to initialize cycle 0
+/// @param size size of grid
+/// @param data array of cells in grid
+/// 
+static void shuffle( long size, char data[]) {
+    for( int i = 0; i < size - 1; ++i) {
+	unsigned long j = (i + random()) % size;
+	char tmp = data[i];
+	data[i] = data[j];
+	data[j] = tmp;
+    }
+}
+
 /// Uses getopt() function to process command line options. 
 /// @param argc length of argv
 /// @param argv array of command strings
@@ -277,10 +300,10 @@ int main( int argc, char * argv[] ) {
     case 'b':
 	opterr = (int)strtol( optarg, NULL, 10);
 	if ( 0 < opterr && opterr < 101) {
-	    pBurning = (float)opterr;
+	    pBurning = (float)opterr/100;
 	    //printf("%f\n", pBurning);
 	} else {
-	    fprintf( stderr, "proportion already burning. must be an integer in [1...100].\n");
+	    fprintf( stderr, "(-bN) proportion already burning. must be an integer in [1...100].\n");
 	    help();
 	}
 	break;
@@ -288,10 +311,10 @@ int main( int argc, char * argv[] ) {
     case 'c':
 	opterr = (int)strtol( optarg, NULL, 10);
 	if (0 <  opterr && opterr < 101) {
-	    pCatch = (float)opterr;
+	    pCatch = (float)opterr/100;
 	    //printf("%f\n", pCatch);
 	} else {
-	    fprintf( stderr, "probability a tree will catch fire. must be an integer in [1...100].\n");
+	    fprintf( stderr, "(-cN) probability a tree will catch fire. must be an integer in [1...100].\n");
 	    help();
 	}
 	break;
@@ -299,10 +322,10 @@ int main( int argc, char * argv[] ) {
     case 'd':
 	opterr = (int)strtol( optarg, NULL, 10);
 	if (0 < opterr && opterr < 101) {
-	    density = (float)opterr;
+	    density = (float)opterr/100;
 	    //printf("%f\n", density);
 	} else {
-	    fprintf( stderr, "density of trees in the grid must be an integer in [1...100].\n");
+	    fprintf( stderr, "(-dN) density of trees in the grid must be an integer in [1...100].\n");
 	    help();
 	}
 	break;
@@ -310,10 +333,10 @@ int main( int argc, char * argv[] ) {
     case 'n':
 	opterr = (int)strtol( optarg, NULL, 10);
 	if (-1 < opterr && opterr < 101) {
-	    pNeighbor = (float)opterr;
+	    pNeighbor = (float)opterr/100;
 	    //printf("%f\n", pNeighbor);
 	} else {
-	    fprintf( stderr, "neighbors influence catching fire must be an integer in [0...100].\n");
+	    fprintf( stderr, "(-nN) neighbors influence catching fire must be an integer in [0...100].\n");
 	    help();
 	}
 	break;
@@ -321,10 +344,11 @@ int main( int argc, char * argv[] ) {
     case 'p':
 	opterr = (int)strtol( optarg, NULL, 10);
 	if (-1 < opterr) {
+	    print = 1;
 	    cycle = (int)opterr;
 	    //printf("%d\n", cycle);
 	} else {
-	    fprintf( stderr, "number of cycles to print. must be an integer in [0...10000].\n");
+	    fprintf( stderr, "(-pN) number of cycles to print. must be an integer in [0...10000].\n");
 	    help();
 	}
 	break;
@@ -335,7 +359,7 @@ int main( int argc, char * argv[] ) {
 	    size = (size_t)opterr;
 	    //printf("%zu\n", size);
 	} else {
-	    fprintf( stderr, "simulation grid size must be an integer in [5...40].\n");
+	    fprintf( stderr, "(-sN) simulation grid size must be an integer in [5...40].\n");
 	    help();
 	}
 	break;
@@ -365,9 +389,60 @@ int main( int argc, char * argv[] ) {
 
 	// temp variables 
 
-	int tempfT = fireTrees;
-	int templT = livingTrees;
-	int temps = spaces;
+	//int tempfT = fireTrees;
+	//int templT = livingTrees;
+	//int temps = spaces;
+
+	size_t spots = spaces + livingTrees + fireTrees;
+	char start[spots];
+
+	memset(start, 0, spots);
+
+	int d;
+	int e;
+	int f;
+
+	size_t len;
+
+	for (d = 0; d < spaces; d++) {
+	    len = strlen(start);
+	    start[len] = ' ';
+	    start[len + 1] = '\0';
+	    /*
+	    len = strlen(start);
+	    snprintf(start + len, sizeof start - len, "%c", ' ');  
+	    */
+	}
+
+	for (e = 0; e < livingTrees; e++) {
+	    len = strlen(start);
+            start[len] = 'Y';
+            start[len + 1] = '\0';
+	    /*
+	    len = strlen(start);
+            snprintf(start + len, sizeof start - len, "%c", ' ');
+	    */
+	}
+
+	for (f = 0; f < fireTrees; f++) {
+	    len = strlen(start);
+            start[len] = '*';
+            start[len + 1] = '\0';
+	    /*
+	    len = strlen(start);
+            snprintf(start + len, sizeof start - len, "%c", ' ');
+	    */
+	}
+
+	/*
+	int new;
+        for (new = 0; new < spots; new++) {
+            printf("%c", start[new]);
+        }
+	*/
+
+
+	shuffle(spots, start);
 
 	//  
 
@@ -375,8 +450,39 @@ int main( int argc, char * argv[] ) {
 
 	int i;
 	int j;
-	int b = 1; // boolean 
+	int k = 0;
+	//int b = 1; // boolean
 	
+	if (print == 0) {
+	clear(); 
+	}
+
+	if (print == 1) {
+	    printf("%s\n", "============================");
+  	    printf("%s\n", "======== Wildfire ==========");
+  	    printf("%s\n", "============================");
+            printf("==== Print <=  %d Cycles ====\n", cycle);
+            printf("%s\n", "============================");
+	}
+
+	for (i = 0; i < size; i++) {
+	    for (j = 0; j < size; j++) {
+	        grid[i][j] = start[k];
+		if (print == 0) {
+		    set_cur_pos(i, j);
+		    put(grid[i][j]);
+		} else {
+		printf("%c", grid[i][j]);
+		}
+		k++;
+	    }
+	  //if (print == 1) {
+	  printf("\n");
+	  //}
+	}
+		
+	
+	/*
 	for (i = 0; i < size; i++) { // builds cycle0 randomly
 	    for (j = 0; j < size; j++) {
 	      while(b) {
@@ -384,33 +490,55 @@ int main( int argc, char * argv[] ) {
 		if (r == 0 && fireTrees > 0) {
 		    fireTrees--;
 		    grid[i][j] = '*';
+		    if (print == 0) {
+			set_cur_pos(i, j);
+			put(grid[i][j]);
+		    } else {
 		    printf("%c", grid[i][j]);
+		    }
 		    break;
 		} else if (r == 1 && livingTrees > 0) {
 		    livingTrees--;
 		    grid[i][j] = 'Y';
-		    printf("%c", grid[i][j]);
+		    if (print == 0) {
+                        set_cur_pos(i, j);
+                        put(grid[i][j]);
+                    } else {
+                    printf("%c", grid[i][j]);
+                    }
 		    break;
 		} else if (r == 2 && spaces > 0) {
 		    spaces--;
 		    grid[i][j] = ' ';
-		    printf("%c", grid[i][j]);
+		    if (print == 0) {
+                        set_cur_pos(i, j);
+                        put(grid[i][j]);
+                    } else {
+                    printf("%c", grid[i][j]);
+                    }
 		    break; 
 		}
 
 	     }
 
-	    }
+	  }
 
-	printf("\n");
+	if( print == 1 && i != (size - 1)) {
+                printf("\n");
+	}
 
 	}
-	
+	*/
+
+	printf("\rsize %zu, pCatch %.2f, density %.2f, pBurning %.2f, pNeighbor %.2f", size, pCatch, density, pBurning, pNeighbor);
+        printf("\ncycle %d, changes %d, cumulative changes %d\n ", 0, 0, 0);
+	usleep(750000);
+
 	// reassignment 
 
-	fireTrees = tempfT;
-	livingTrees = templT;
-	spaces = temps;
+	//fireTrees = tempfT;
+	//livingTrees = templT;
+	//spaces = temps;
 
 	//
 
@@ -422,25 +550,52 @@ int main( int argc, char * argv[] ) {
 //
 // // // // // // // // // // // // // // // // // // // // // // // // 
 
-  int newC; // changes per cycle
-  int currCycle = 0; // current cycle of simulation
+  //int newC; // changes per cycle
+  int currCycle = 1; // current cycle of simulation 	
 
-  while(fireTrees >= 0 && cycle >= 0) {
-	newC = update(grid);
-	cChanges += newC;
-	changes = 0;
+  while(fireTrees > 0 && cycle > 0) {
+	//printf("%d", fireTrees);
+	update(grid);
+	cChanges += changes;
+	//changes = 0;
 
 	for (i = 0; i < size; i++) { 
             for (j = 0; j < size; j++) {
+		if ( grid[i][j] == '0' || grid[i][j] == '1' || grid[i][j] == '2' ) {
+		    if ( print == 0) {
+		        set_cur_pos(i, j);
+			put('*');
+		    } else {
+		    printf("%c", '*');
+		    }
+		} else {
+		    if ( print == 0) {
+		        set_cur_pos(i, j);
+			put(grid[i][j]);
+		    } else {
 		printf("%c", grid[i][j]);
+		}
+	      }
 	    }
-	  printf("\n");
+	    if( print == 1 && i != (size - 1)) {
+	        printf("\n");
+	    }
 	}
-	//printf("%d\n", newC);
-	//printf("%d\n", currCycle);
-	newC = 0;
+	puts(" ");
+	//printf("\rsize %zu, pCatch %.2f, density %.2f, pBurning %.2f, pNeighbor %.2f", size, pCatch, density, pBurning, pNeighbor);
+	//cChanges = changes;
+	//printf("\ncycle %d, changes %d, cumulative changes %d", currCycle, changes, changes);
+	//printf("cumulative changes %d", changes);
+	//newC = 0;
+	printf("\rsize %zu, pCatch %.2f, density %.2f, pBurning %.2f, pNeighbor %.2f", size, pCatch, density, pBurning, pNeighbor);
+        printf("\ncycle %d, changes %d, cumulative changes %d \n", currCycle, changes, cChanges);	
+	changes = 0;
 	currCycle++;
 	cycle--;
+	usleep(750000);
+  }
+  if ( fireTrees == 0) {
+      printf("%s\n", "\nFires are out.");
   }
 
 return(EXIT_SUCCESS);
