@@ -2,6 +2,7 @@
 
 
 compile using: gcc -std=c99 -o wildfire wildfire.c display.h display.c
+
 run using: ./wildfire
 
 Implements the simulation of spreading fire. The program implements
