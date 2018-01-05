@@ -1,0 +1,47 @@
+============================= ASSIGNMENT REPORT ============================
+Assignment name is: Wildfire
+My name is:         <<<William Raffaelle>>>
+
+	[USE PLAIN TEXT]
+	[INSERT ANSWERS AFTER EACH QUESTION AND ADD MORE LINES AS NEEDED.]
+	[MAKE YOUR ANSWERS SHORT AND TO THE POINT. BULLET POINTS ARE GOOD.]
+
+===== In what cases does the program run correctly?  =================
+
+Default case and examples provided in project write-up. 
+
+===== In what cases does the program fail and how?  ==================
+
+When command line arguments are out of range.
+
+The program always ends when all fires are out rather than
+when the number of cycles is reached.  
+
+===== If applicable, what were the extra credit results?  ============
+===== If applicable, describe how to run the extra credit.  ==========
+
+===== How much time did I spend on the project?  =====================
+
+Around 20 hours.
+
+===== What did I learn?  =============================================
+
+Memory management as well as time management.  
+
+===== What was easy in this assignment?  =============================
+
+Getting command line arguments. The example file was really helpful.
+
+===== What gave me problems or troubles?  ============================
+
+Initializing the grid to match try tests. 
+
+===== What would be the most important improvement for the project?  =
+
+Make the examples in the write-up match the format of the try tests!
+
+===== What else would I have liked to do for this assignment?  =======
+
+Have the user build the initial grid rather than randomly making it.
+
+============================================================================

@@ -1,0 +1,41 @@
+commit d9a37b3abc406d18bd361402155e029a6ba171a8
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Sat Jul 8 22:40:05 2017 -0400
+
+    tested and fully working
+
+commit ec1ecdcfd1ee7fca3ada8f79af16ebbed8ff0776
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Tue Jun 27 21:43:58 2017 -0400
+
+    update and spread functions fully implemented and working. Output of grid needs work.
+
+commit 4365f0cb8d10b7f88eb33b4c74fdd40dfd6e1967
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Mon Jun 26 21:37:56 2017 -0400
+
+    started implementing main loop, update calls spread and changes grid, spread handles living tree case but not burning tree case
+
+commit 23325fc09a13fb5341311d22d6f66b017a2aa13b
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Sat Jun 24 16:56:38 2017 -0400
+
+    grid is initialized randomly
+
+commit e6e73b33607f0034e76da4fed5d560779efa4da2
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Thu Jun 22 10:17:24 2017 -0400
+
+    command line options change existing variables, program now gets number of cell types
+
+commit 5f2f1517a08e7e4c8eb3feca1ff0aa9e8723f182
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Fri Jun 16 13:47:21 2017 -0400
+
+    implemented function to process a command line option using getopt
+
+commit ff20fd64f1384016681556c63aa299a22755b35e
+Author: William Otto Raffaelle <wor3835@cs.rit.edu>
+Date:   Thu Jun 15 16:59:06 2017 -0400
+
+    initial project version
