@@ -8,9 +8,11 @@
   to the grid as the fire spreads. The optional print mode prints another grid for
   each simulation cycle.
   
-    compile using: gcc -std=c99 -o wildfire wildfire.c display.c
-
-    run using: ./wildfire
+  # compile
+    gcc -std=c99 -o wildfire wildfire.c display.c
+    
+  # run
+    ./wildfire
     usage: wildfire [options]
 
 By default, the simulation runs in overlay display mode 
