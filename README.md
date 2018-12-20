@@ -1,10 +1,5 @@
 # wild-fire 
 
-
-compile using: gcc -std=c99 -o wildfire wildfire.c display.h display.c
-
-run using: ./wildfire
-  
   Implements the simulation of spreading fire. The program implements
   a combination of [Shiflet] Assignents with variations. The state of 
   the system is repeatedly computed and displayed to show the progression
@@ -12,8 +7,11 @@ run using: ./wildfire
   is represented by a grid of cells. Cursor-control functions are used to show changes
   to the grid as the fire spreads. The optional print mode prints another grid for
   each simulation cycle.
+  
+    compile using: gcc -std=c99 -o wildfire wildfire.c display.c
 
-usage: wildfire [options]
+    run using: ./wildfire
+    usage: wildfire [options]
 
 By default, the simulation runs in overlay display mode 
 The -pN option makes the simulation run in print mode for up to N cycles
